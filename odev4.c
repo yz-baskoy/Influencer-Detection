@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <assert.h>
 
 typedef struct Person {
 	int numNodes;
@@ -68,8 +69,24 @@ void printGraph(graph *g) {
 	}
 	printf("*}\n");
 }
-bool addEdge(graph *g, int fromNode, int toNode);
-bool hasEdge(graph *g, int fromNode, int toNode);
+bool addEdge(graph *g, int fromNode, int toNode) {
+	assert(g != NULL);
+	assert(fromNode < g->numNodes);
+    assert(toNode < g->numNodes);
+	if (hasEdge(g, fromNode, toNode)) {
+		return false;
+	}
+	
+	g->edges[fromNode][toNode] = true;
+	return true;
+}
+bool hasEdge(graph *g, int fromNode, int toNode) {
+	assert(g != NULL);
+	assert(fromNode < g->numNodes);
+	assert(toNode < g->numNodes);
+		
+	return g->edges[fromNode][toNode];
+}
 
 
 
