@@ -5,43 +5,70 @@
 typedef struct Person {
 	int numNodes;
 	bool **edges;
-} person;
+} graph;
 
 /*Function prototypes*/
-person *createGraph(int numNodes);
-void destroyGraph(person* p);
-void printGraph(person *p);
-bool addEdge(person *p, int fromNode, int toNode);
-bool hasEdge(person *p, int fromNode, int toNode);
+graph *createGraph(int numNodes);
+void destroyGraph(graph* g);
+void printGraph(graph *g);
+bool addEdge(graph *g, int fromNode, int toNode);
+bool hasEdge(graph *g, int fromNode, int toNode);
 
 int main() {
 	return 0;
 }
-person *createGraph(int numNodes) {
-	person *p = malloc(sizeof(*p));
-	if (p == NULL) {
+graph *createGraph(int numNodes) {
+	graph *g = malloc(sizeof(*g));
+	if (g == NULL) {
 		return NULL;	
 	}
-	p->numNodes = numNodes;
+	g->numNodes = numNodes;
 	// allocte matrix
-	p->edges = calloc(sizeof(bool*), p->numNodes);
-	if (p->edges == NULL) {
-		free(p);
+	g->edges = calloc(sizeof(bool*), g->numNodes);
+	if (g->edges == NULL) {
+		free(g);
 		return NULL;
 	}
 
-	for(int i=0;i < p->numNodes;i++) {
-		p->edges[i] = calloc(sizeof(bool), p->numNodes);
-		if (p->edges[i] == NULL) {
-			destroyGraph(p);
+	for(int i=0;i < g->numNodes;i++) {
+		g->edges[i] = calloc(sizeof(bool), g->numNodes);
+		if (g->edges[i] == NULL) {
+			destroyGraph(g);
 			return NULL;
 		}
 	}
-	return p;
+	return g;
 }
-void destroyGraph(person* p){
 
+void destroyGraph(graph* g){
+	int i;
+	if (g->edges == NULL) {
+		return;
+	}
+
+	for (i=0; i < g->numNodes; i++) {
+		if (g->edges[i] != NULL) {
+			free(g->edges[i]);	
+		}
+	}
+	free(g->edges);
 }
-void printGraph(person *p);
-bool addEdge(person *p, int fromNode, int toNode);
-bool hasEdge(person *p, int fromNode, int toNode);
+
+void printGraph(graph *g);
+bool addEdge(graph *g, int fromNode, int toNode);
+bool hasEdge(graph *g, int fromNode, int toNode);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
