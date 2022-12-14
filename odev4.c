@@ -52,9 +52,22 @@ void destroyGraph(graph* g){
 		}
 	}
 	free(g->edges);
+	free(g);
 }
 
-void printGraph(graph *g);
+void printGraph(graph *g) {
+	int from, to;
+	printf("graph {\n");
+
+	for (from=0 ; from < g->numNodes; from++) {
+		for (to=0; to < g->numNodes; to++) {
+			if (g->edges[from][to]) {
+				printf("%d --> %d;\n", from, to);
+			}
+		}
+	}
+	printf("*}\n");
+}
 bool addEdge(graph *g, int fromNode, int toNode);
 bool hasEdge(graph *g, int fromNode, int toNode);
 
