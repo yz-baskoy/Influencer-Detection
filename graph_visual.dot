@@ -1,0 +1,30 @@
+digraph G {
+
+	/* Entities */
+	1 [label="Michael Jordan(1)"]
+	2 [label = "Stephen Boyd(2)"]
+	3 [label = "Kalyanmoy Deb(3)"]
+	4 [label = "David Johnson(4)"]
+	5 [label = "Scott Kirkpatrick(5)"]
+	6 [label = "Lieven Vandenberghe(6)"]
+	7 [label = "Fabian Pedregosa(7)"]
+	8 [label = "Jorge Nocedal(8)"]
+	9 [label = "Clifford Stein(9)"]
+	10 [label = "Stephen Wright(10)"]
+	11 [label = "Philippe Salembier(11)"]
+	12 [label = "Robert Stevenson(12)"]
+	
+	/* Relationships */
+	1 -> 2, 3, 5
+	2 -> 3, 1
+	3 -> 1, 2
+	4 -> 6
+	5 -> 6, 7
+	6 -> 8
+	7 -> 8
+	8 -> 11, 10, 9
+	9 -> 4
+	10 -> 8, 12
+	11 -> 12
+	12 -> 8, 10, 11
+}
