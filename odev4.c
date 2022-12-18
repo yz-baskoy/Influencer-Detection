@@ -1,19 +1,28 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 #define MAX 100
+#define SIZE 4;
+#define MAX_LINE_LEN 1024
+#define MAX_NAME_LEN 128
+#define MAX_NODES 100
+
+typedef struct {
+    int id;
+    char name[MAX_NAME_LEN];
+    char last_name[MAX_NAME_LEN];
+    int* connections;
+    int num_connections;
+} Person;
 
 typedef struct Graph {
+	Person* persons;
 	int numNodes;
 	bool **edges;
 } graph;
-
-typedef struct Person {
-	char* name;
-	char* surname;
-} person;
 
 /*Function prototypes*/
 graph *createGraph(int numNodes);
@@ -24,10 +33,18 @@ bool hasEdge(graph *g, int fromNode, int toNode);
 void removeNodesByinDegree(graph *g, int m); 
 int* inDegrees(graph* G);
 int inDegree(graph* G, int u);
-int totalConnections(graph * g, int i);
 void printInfluencers(graph *g, int x, int y);
+graph* read_data(const char* filename);
+int calculate_indegree_connections(graph* graph, int start, int end);
+int calculate_indegree_connectionsBFS(graph* graph, int node);
 
 int main() {
+	//graph *g1 = createGraph(13);
+	
+	FILE *file = fopen("socialNET.txt", "r");
+	const char* filename = "socialNET.txt";
+
+	//graph* g1 = read_data(filename);
 	graph *g1 = createGraph(13);
 	addEdge(g1, 1, 2);
 	addEdge(g1, 1, 3);
@@ -62,37 +79,37 @@ int main() {
 	addEdge(g1, 12, 8);
 	addEdge(g1, 12, 10);
 	addEdge(g1, 12, 11);
-
-	printGraph(g1);
 	
+	printGraph(g1);
 	int* degrees = inDegrees(g1);
 
     // print the in-degree of each vertex
     for (int i = 1; i < g1->numNodes; i++) {
-        printf("Vertex %d has in-degree %d\n", i, degrees[i]);
+        printf("Node %d has in-degree %d\n", i, degrees[i]);
     }
 	
-	removeNodesByinDegree(g1, 2);
+	removeNodesByinDegree(g1, 1);
 
 	printf("***************\n");
 
 	printGraph(g1);
 	
 	for (int i = 1; i < g1->numNodes; i++) {
-		if (totalConnections(g1, i) == 0)
-			printf("Vertex %d has %d total connections (DELETED)\n", i, totalConnections(g1, i));
+		if (calculate_indegree_connectionsBFS(g1, i) == 0)
+			printf("Node %d has %d total connections (DELETED)\n", i, calculate_indegree_connectionsBFS(g1, i));
 		else
-			printf("Vertex %d has %d total connections\n", i, totalConnections(g1, i));
+			printf("Node %d has %d total connections\n", i, calculate_indegree_connectionsBFS(g1, i));
 	}
-
-	printInfluencers(g1, 2, 3);
-
+	printInfluencers(g1, 2, 4);
 	destroyGraph(g1);
+	fclose(file);
 	return 0;
 }
 
 graph *createGraph(int numNodes) {
 	graph *g = malloc(sizeof(*g));
+    g->persons = malloc(numNodes * sizeof(Person));
+
 	if (g == NULL) {
 		return NULL;	
 	}
@@ -211,41 +228,6 @@ void removeNodesByinDegree(graph *g, int m) {
 	}
 }
 
-/*breadth first search to calculate the total number of direct and indirect connections*/
-int totalConnections(graph * g, int i) {
-	int j, connections = 0;
-	int queue[MAX], front = 0, rear = 0;
-	int visited[MAX];
-
-	if (i >= g -> numNodes) {
-		printf("Error: NODE does not exist\n");
-		return -1;
-	}
-
-	for (j = 0; j < g -> numNodes; j++) {
-		visited[j] = 0;
-	}
-
-	queue[rear] = i;
-	rear++;
-	visited[i] = 1;
-
-	while (front != rear) {
-		int k = queue[front];
-		front++;
-
-		for (j = 0; j < g -> numNodes; j++) {
-		if (g -> edges[k][j] == 1 && visited[j] == 0) {
-			queue[rear] = j;
-			rear++;
-			visited[j] = 1;
-			connections++;
-		}
-		}
-	}
-
-	return connections;
-}
 
 void printInfluencers(graph * g, int x, int y) {
     int i;
@@ -253,9 +235,110 @@ void printInfluencers(graph * g, int x, int y) {
 	printf("Influencer nodes:\n");
 
 	for (i = 0; i < g -> numNodes; i++) {
-		if (inDegree(g, i) >= x && totalConnections(g, i) >= y) {
-		printf("Node %d: in-degree %d, total connections %d\n", i, inDegree(g, i), totalConnections(g, i));
+		if (inDegree(g, i) >= x && calculate_indegree_connectionsBFS(g, i) >= y) {
+		printf("Node %d: in-degree %d, total connections %d\n", i, inDegree(g, i), calculate_indegree_connectionsBFS(g, i));
 		}
 	}
 }
 
+Person* parse_data(const char* data, int* num_people) {
+    // Split the data into lines
+    char* lines[MAX_LINE_LEN];
+    int num_lines = 0;
+    char* line = strtok((char*)data, "\n");
+    while (line) {
+        lines[num_lines++] = line;
+        line = strtok(NULL, "\n");
+    }
+
+    // Allocate an array for the Person objects
+    Person* people = malloc(sizeof(Person) * num_lines);
+    *num_people = num_lines;
+
+    // Parse each line and create a Person object
+    for (int i = 0; i < num_lines; i++) {
+        char* parts[MAX_NAME_LEN];
+        int num_parts = 0;
+        char* part = strtok(lines[i], ",");
+        while (part) {
+            parts[num_parts++] = part;
+            part = strtok(NULL, ",");
+        }
+        people[i].id = atoi(parts[0]);
+        strcpy(people[i].name, parts[1]);
+        strcpy(people[i].last_name, parts[2]);
+        people[i].num_connections = num_parts - 3;
+        people[i].connections = malloc(sizeof(int) * people[i].num_connections);
+        for (int j = 0; j < people[i].num_connections; j++) {
+            people[i].connections[j] = atoi(parts[j + 3]);
+        }
+    }
+
+    return people;
+}
+
+void free_people(Person* people, int num_people) {
+    for (int i = 0; i < num_people; i++) {
+        free(people[i].connections);
+    }
+    free(people);
+}
+
+/*breadth first search to calculate the total number of direct and indirect connections*/
+int calculate_indegree_connections(graph* graph, int start, int end) {
+  // Initialize a queue for BFS
+  int queue[MAX_NODES];
+  int head = 0;
+  int tail = 0;
+  
+  // Initialize a visited array to keep track of visited nodes
+  bool visited[MAX_NODES];
+  for (int i = 0; i < graph->numNodes; i++) {
+    visited[i] = false;
+  }
+  
+  // Enqueue the start node and mark it as visited
+  queue[tail] = start;
+  tail++;
+  visited[start] = true;
+  
+  // Initialize the number of connections to 0
+  int connections = 0;
+  
+  // Perform BFS
+  while (head < tail) {
+    // Dequeue the next node
+    int current = queue[head];
+    head++;
+    
+    // Check if the current node is the end node
+    if (current == end) {
+      connections++;
+    }
+    
+    // Enqueue the unvisited neighbors of the current node
+    for (int i = 0; i < graph->numNodes; i++) {
+      if (graph->edges[current][i] == 1 && !visited[i]) {
+        queue[tail] = i;
+        tail++;
+        visited[i] = true;
+      }
+    }
+  }
+  
+  // Return the number of connections
+  return connections;
+}
+
+int calculate_indegree_connectionsBFS(graph* graph, int node) {
+  // Initialize the number of connections to 0
+  int connections = 0;
+  
+  // Iterate through the graph and count the number of connections
+  // to the given node using BFS
+  for (int i = 0; i < graph->numNodes; i++) {
+    connections += calculate_indegree_connections(graph, i, node);
+  }
+  
+  return connections;
+}
