@@ -38,6 +38,7 @@ int calculateIndegreeConnections(graph* graph, int start, int end);
 int calculateIndegreeConnectionsBFS(graph* graph, int node);
 void freePeople(Person* people, int num_people);
 Person* parseData(const char* data, int* num_people);
+void printPersonNameById(int id, Person *people, int numPeople); 
 
 int main() {
 	FILE *fp = fopen("socialNET.txt", "r");
@@ -71,49 +72,57 @@ int main() {
         }
         printf("\n");
     }
+	printGraph(g1);
+
+	printf("************************************************\n");
+    printf("* Menu *\n");
+    printf("1. NORMAL MODE \n");
+    printf("2. DETAIL MODE \n");
+    printf("Choose Your Side!:\n");
+	printf("************************************************\n");
 
 	int deger;
 	scanf("%d", &deger);
 
-	printGraph(g1);
 	int* degrees = inDegrees(g1);
 
-    // print the in-degree of each vertex
-    for (int i = 1; i < g1->numNodes; i++) {
-        printf("Node %d has in-degree %d\n", i, degrees[i]);
-    }
-	
-	removeNodesByinDegree(g1, 2);
+	removeNodesByinDegree(g1, 1);
 
-	printf("ELENDIKTEN SONRA INDEGREE DEGERLERI: ***************\n");
 	int* degrees2 = inDegrees(g1);
 
-    // print the in-degree of each vertex
-    for (int i = 1; i < g1->numNodes; i++) {
-        printf("Node %d has in-degree %d\n", i, degrees2[i]);
-    }
-	printf("ELENDIKTEN SONRA GRAFIN KENDISI *************\n");
+    switch (deger)
+    {
+    case 1:
+        printInfluencers(g1, 2, 4, people);
+        break;
+    case 2:
+        printf("BASLANGIC DURUMUNDA INDEGREE DEGERLERI\n");
+        for (int i = 1; i < g1->numNodes; i++)
+        {
+            printf("Node %d has in-degree %d\n", i, degrees[i]);
+        }
 
-	printGraph(g1);
-	
-	for (int i = 1; i < g1->numNodes; i++) {
-		if (calculateIndegreeConnectionsBFS(g1, i) == 0)
-			printf("Node %d has %d total connections (DELETED)\n", i, calculateIndegreeConnectionsBFS(g1, i));
-		else
-			printf("Node %d has %d total connections\n", i, calculateIndegreeConnectionsBFS(g1, i));
-	}
-	printInfluencers(g1, 2, 4, people);
-	switch (deger)
-	{
-	case 1:
-		/* code */
-		break;
-	case 2:
-		break;
-	default:
-		break;
-	}
-	destroyGraph(g1);
+        printf("ELENDIKTEN SONRA INDEGREE DEGERLERI\n");
+        // print the in-degree of each vertex
+        for (int i = 1; i < g1->numNodes; i++)
+        {
+            printf("Node %d has in-degree %d\n", i, degrees2[i]);
+        }
+
+        for (int i = 1; i < g1->numNodes; i++)
+        {
+            if (calculateIndegreeConnectionsBFS(g1, i) == 0)
+                printf("Node %d has %d total connections (DELETED)\n", i, calculateIndegreeConnectionsBFS(g1, i));
+            else
+                printf("Node %d has %d total connections\n", i, calculateIndegreeConnectionsBFS(g1, i));
+        }
+        printInfluencers(g1, 2, 4, people);
+        break;
+    default:
+        break;
+    }
+
+    destroyGraph(g1);
 	freePeople(people, num_people);
 	return 0;
 }
@@ -126,9 +135,9 @@ graph *createGraph(int numNodes) {
 		return NULL;	
 	}
 	g->numNodes = numNodes;
-	// allocte matrix
 	g->edges = calloc(sizeof(bool*), g->numNodes);
-	if (g->edges == NULL) {
+	
+    if (g->edges == NULL) {
 		free(g);
 		return NULL;
 	}
@@ -196,7 +205,7 @@ bool hasEdge(graph *g, int fromNode, int toNode) {
 int inDegree(graph* G, int u) {
     int degree = 0;
     for (int i = 0; i < G->numNodes; i++) {
-        if (G->edges[i][u] == 1) {
+        if (G->edges[i][u] == true) {
             degree++;
         }
     }
@@ -298,59 +307,69 @@ void freePeople(Person* people, int num_people) {
 
 /*breadth first search to calculate the total number of direct and indirect connections*/
 int calculateIndegreeConnections(graph* graph, int start, int end) {
-  // Initialize a queue for BFS
-  int queue[MAX_NODES];
-  int head = 0;
-  int tail = 0;
-  
-  // Initialize a visited array to keep track of visited nodes
-  bool visited[MAX_NODES];
-  for (int i = 0; i < graph->numNodes; i++) {
-    visited[i] = false;
-  }
-  
-  // Enqueue the start node and mark it as visited
-  queue[tail] = start;
-  tail++;
-  visited[start] = true;
-  
-  // Initialize the number of connections to 0
+    int queue[MAX_NODES];
+    int head = 0;
+    int tail = 0;
+
+    bool visited[MAX_NODES];
+    for (int i = 0; i < graph->numNodes; i++) {
+        visited[i] = false;
+    }
+
+    queue[tail] = start;
+    tail++;
+    visited[start] = true;
+
+    int connections = 0;
+
+    while (head < tail) {
+        int current = queue[head];
+        head++;
+
+        if (current == end) {
+            connections++;
+        }
+
+        for (int i = 0; i < graph->numNodes; i++) {
+        if (graph->edges[current][i] == true && !visited[i]) {
+            queue[tail] = i;
+            tail++;
+            visited[i] = true;
+            }
+        }
+    }
+
+    return connections;
+}
+
+
+
+int calculateIndegreeConnectionsBFS(graph* graph, int node) {
   int connections = 0;
   
-  // Perform BFS
-  while (head < tail) {
-    // Dequeue the next node
-    int current = queue[head];
-    head++;
-    
-    // Check if the current node is the end node
-    if (current == end) {
-      connections++;
+  // Iterate through the graph and count the number of connections 
+  // to the given node using BFS
+  for (int i = 0; i < graph->numNodes; i++) {
+    // dont call bfs on self node 
+    if (i == node)
+    {
+        connections += 0;
     }
-    
-    // Enqueue the unvisited neighbors of the current node
-    for (int i = 0; i < graph->numNodes; i++) {
-      if (graph->edges[current][i] == 1 && !visited[i]) {
-        queue[tail] = i;
-        tail++;
-        visited[i] = true;
-      }
+    else
+    {
+        connections  += calculateIndegreeConnections(graph, i, node);
     }
   }
-  
-  // Return the number of connections
+
   return connections;
 }
 
-int calculateIndegreeConnectionsBFS(graph* graph, int node) {
-  // Initialize the number of connections to 0
-  int connections = 0;
-  
-  // Iterate through the graph and count the number of connections
-  // to the given node using BFS
-  for (int i = 0; i < graph->numNodes; i++) {
-    connections += calculateIndegreeConnections(graph, i, node);
-  }
-  
-  return connections;
+void printPersonNameById(int id, Person *people, int numPeople) {
+    for (int i = 0; i < numPeople; i++) {
+        if (people[i].id == id) {
+            printf("Name: %s\n", people[i].name);
+            return;
+        }
+    }
+    printf("No person with id %d was found.\n", id);
 }
