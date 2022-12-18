@@ -33,53 +33,48 @@ bool hasEdge(graph *g, int fromNode, int toNode);
 void removeNodesByinDegree(graph *g, int m); 
 int* inDegrees(graph* G);
 int inDegree(graph* G, int u);
-void printInfluencers(graph *g, int x, int y);
-graph* read_data(const char* filename);
-int calculate_indegree_connections(graph* graph, int start, int end);
-int calculate_indegree_connectionsBFS(graph* graph, int node);
+void printInfluencers(graph *g, int x, int y, Person * p);
+int calculateIndegreeConnections(graph* graph, int start, int end);
+int calculateIndegreeConnectionsBFS(graph* graph, int node);
+void freePeople(Person* people, int num_people);
+Person* parseData(const char* data, int* num_people);
 
 int main() {
-	//graph *g1 = createGraph(13);
-	
-	FILE *file = fopen("socialNET.txt", "r");
-	const char* filename = "socialNET.txt";
+	FILE *fp = fopen("socialNET.txt", "r");
+	   if (!fp) {
+        fprintf(stderr, "Error opening file\n");
+        return 1;
+    }
+    fseek(fp, 0, SEEK_END);
+    long data_len = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    char* data = malloc(data_len + 1);
+    fread(data, 1, data_len, fp);
+    fclose(fp);
+    data[data_len] = '\0';
 
-	//graph* g1 = read_data(filename);
-	graph *g1 = createGraph(13);
-	addEdge(g1, 1, 2);
-	addEdge(g1, 1, 3);
-	addEdge(g1, 1, 5);
+    // Parse the data and create the list of Person objects
+    int num_people;
+    Person* people = parseData(data, &num_people);
+    free(data);
 
-	addEdge(g1, 2, 1);
-	addEdge(g1, 2, 3);
-	
-	addEdge(g1, 3, 1);
-	addEdge(g1, 3, 2);
+    printf("Number of people: %d\n", num_people);
+	graph *g1 = createGraph(num_people + 1);
 
-	addEdge(g1, 4, 6);
-	
-	addEdge(g1, 5, 6);
-	addEdge(g1, 5, 7);
-	
-	addEdge(g1, 6, 8);
-	
-	addEdge(g1, 7, 8);
-	
-	addEdge(g1, 8, 11);
-	addEdge(g1, 8, 10);
-	addEdge(g1, 8, 9);
-	
-	addEdge(g1, 9, 4);
-	
-	addEdge(g1, 10, 8);
-	addEdge(g1, 10, 12);
-	
-	addEdge(g1, 11, 12);
-	
-	addEdge(g1, 12, 8);
-	addEdge(g1, 12, 10);
-	addEdge(g1, 12, 11);
-	
+    // Print the list of people and create edges
+    for (int i = 0; i < num_people; i++) {
+        Person person = people[i];
+        printf("indis: %d, ID: %d, Name: %s %s, Connections:", i, person.id, person.name, person.last_name);
+        for (int j = 0; j < person.num_connections; j++) {
+            printf("addEdge(%d %d)",person.id, person.connections[j]);
+			addEdge(g1, person.id, person.connections[j]);
+        }
+        printf("\n");
+    }
+
+	int deger;
+	scanf("%d", &deger);
+
 	printGraph(g1);
 	int* degrees = inDegrees(g1);
 
@@ -88,21 +83,38 @@ int main() {
         printf("Node %d has in-degree %d\n", i, degrees[i]);
     }
 	
-	removeNodesByinDegree(g1, 1);
+	removeNodesByinDegree(g1, 2);
 
-	printf("***************\n");
+	printf("ELENDIKTEN SONRA INDEGREE DEGERLERI: ***************\n");
+	int* degrees2 = inDegrees(g1);
+
+    // print the in-degree of each vertex
+    for (int i = 1; i < g1->numNodes; i++) {
+        printf("Node %d has in-degree %d\n", i, degrees2[i]);
+    }
+	printf("ELENDIKTEN SONRA GRAFIN KENDISI *************\n");
 
 	printGraph(g1);
 	
 	for (int i = 1; i < g1->numNodes; i++) {
-		if (calculate_indegree_connectionsBFS(g1, i) == 0)
-			printf("Node %d has %d total connections (DELETED)\n", i, calculate_indegree_connectionsBFS(g1, i));
+		if (calculateIndegreeConnectionsBFS(g1, i) == 0)
+			printf("Node %d has %d total connections (DELETED)\n", i, calculateIndegreeConnectionsBFS(g1, i));
 		else
-			printf("Node %d has %d total connections\n", i, calculate_indegree_connectionsBFS(g1, i));
+			printf("Node %d has %d total connections\n", i, calculateIndegreeConnectionsBFS(g1, i));
 	}
-	printInfluencers(g1, 2, 4);
+	printInfluencers(g1, 2, 4, people);
+	switch (deger)
+	{
+	case 1:
+		/* code */
+		break;
+	case 2:
+		break;
+	default:
+		break;
+	}
 	destroyGraph(g1);
-	fclose(file);
+	freePeople(people, num_people);
 	return 0;
 }
 
@@ -229,19 +241,19 @@ void removeNodesByinDegree(graph *g, int m) {
 }
 
 
-void printInfluencers(graph * g, int x, int y) {
+void printInfluencers(graph * g, int x, int y, Person * p) {
     int i;
 
 	printf("Influencer nodes:\n");
 
 	for (i = 0; i < g -> numNodes; i++) {
-		if (inDegree(g, i) >= x && calculate_indegree_connectionsBFS(g, i) >= y) {
-		printf("Node %d: in-degree %d, total connections %d\n", i, inDegree(g, i), calculate_indegree_connectionsBFS(g, i));
+		if (inDegree(g, i) >= x && calculateIndegreeConnectionsBFS(g, i) >= y) {
+		printf("Node %d: name: %s surname: %s in-degree: %d, total connections: %d\n", i, p[i-1].name, p[i-1].last_name, inDegree(g, i), calculateIndegreeConnectionsBFS(g, i));
 		}
 	}
 }
 
-Person* parse_data(const char* data, int* num_people) {
+Person* parseData(const char* data, int* num_people) {
     // Split the data into lines
     char* lines[MAX_LINE_LEN];
     int num_lines = 0;
@@ -277,7 +289,7 @@ Person* parse_data(const char* data, int* num_people) {
     return people;
 }
 
-void free_people(Person* people, int num_people) {
+void freePeople(Person* people, int num_people) {
     for (int i = 0; i < num_people; i++) {
         free(people[i].connections);
     }
@@ -285,7 +297,7 @@ void free_people(Person* people, int num_people) {
 }
 
 /*breadth first search to calculate the total number of direct and indirect connections*/
-int calculate_indegree_connections(graph* graph, int start, int end) {
+int calculateIndegreeConnections(graph* graph, int start, int end) {
   // Initialize a queue for BFS
   int queue[MAX_NODES];
   int head = 0;
@@ -330,14 +342,14 @@ int calculate_indegree_connections(graph* graph, int start, int end) {
   return connections;
 }
 
-int calculate_indegree_connectionsBFS(graph* graph, int node) {
+int calculateIndegreeConnectionsBFS(graph* graph, int node) {
   // Initialize the number of connections to 0
   int connections = 0;
   
   // Iterate through the graph and count the number of connections
   // to the given node using BFS
   for (int i = 0; i < graph->numNodes; i++) {
-    connections += calculate_indegree_connections(graph, i, node);
+    connections += calculateIndegreeConnections(graph, i, node);
   }
   
   return connections;
