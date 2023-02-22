@@ -14,7 +14,7 @@ To install and use this program, follow these steps:
 
 3) Compile the program using your C compiler. For example, you can use the command 
 
-``` gcc -o graph-analysis main.c. ```
+``` gcc -o graph-analysis main.c ```
 
 4) Run the program by typing 
 
